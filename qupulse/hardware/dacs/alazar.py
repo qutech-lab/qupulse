@@ -6,6 +6,7 @@ import math
 import functools
 import abc
 import logging
+from numbers import Rational
 
 import numpy as np
 
@@ -18,6 +19,24 @@ from qupulse.hardware.util import traced
 
 
 logger = logging.getLogger(__name__)
+
+
+def sample_masks(begins: np.ndarray, lengths: np.ndarray, sample_rate: Rational):
+    assert begins.dtype == float and lengths.dtype == float
+
+    # optimization potential here (hash input?)
+    begins = np.rint(begins * float(sample_rate)).astype(dtype=np.uint64)
+    lengths = np.floor_divide(lengths * float(sample_rate.numerator),
+                              float(sample_rate.denominator)).astype(dtype=np.uint64)
+
+    sorting_indices = np.argsort(begins)
+    begins = begins[sorting_indices]
+    lengths = lengths[sorting_indices]
+
+    begins.flags.writeable = False
+    lengths.flags.writeable = False
+
+    return begins, lengths
 
 
 class AlazarProgram:
@@ -77,20 +96,7 @@ class AlazarProgram:
         elif sample_factor != self._sample_factor:
             raise RuntimeError('class AlazarProgram has already masks with differing sample factor')
 
-        assert begins.dtype == float and lengths.dtype == float
-
-        # optimization potential here (hash input?)
-        begins = np.rint(begins * float(sample_factor)).astype(dtype=np.uint64)
-        lengths = np.floor_divide(lengths * float(sample_factor.numerator), float(sample_factor.denominator)).astype(dtype=np.uint64)
-
-        sorting_indices = np.argsort(begins)
-        begins = begins[sorting_indices]
-        lengths = lengths[sorting_indices]
-
-        begins.flags.writeable = False
-        lengths.flags.writeable = False
-
-        self._masks[mask_name] = begins, lengths
+        self._masks[mask_name] = sample_masks(begins, lengths, sample_factor)
 
         return begins, lengths
 
@@ -350,7 +356,7 @@ class AlazarCard(DAC):
             elif config.totalRecordSize < total_record_size:
                 raise ValueError('specified total record size is smaller than needed {} < {}'.format(config.totalRecordSize,
                                                                                                      total_record_size))
-            self.__card.applyConfiguration(config, True)
+            self.__card.applyConfiguration(config, True, extend_to_all_channels=True)
             self._current_config = config
 
             self.update_settings = False
