@@ -158,7 +158,8 @@ class AtomicMultiChannelPulseTemplate(AtomicPulseTemplate, ParameterConstrainer)
 
     def get_serialization_data(self, serializer: Optional[Serializer]=None) -> Dict[str, Any]:
         data = super().get_serialization_data(serializer)
-        data['subtemplates'] = self.subtemplates
+        data['subtemplates'] = [subtemplate.get_serialization_data(serializer)
+                                for subtemplate in self.subtemplates]
 
         if serializer: # compatibility to old serialization routines, deprecated
             data = dict()

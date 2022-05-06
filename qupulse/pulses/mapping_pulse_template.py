@@ -44,7 +44,7 @@ class MappingPulseTemplate(PulseTemplate, ParameterConstrainer):
         is raised. To allow partial mappings and enable the same behaviour as for the channel and measurement name
         mapping allow_partial_parameter_mapping must be set to True.
         Furthermore parameter constrains can be specified.
-        
+
         :param template: The encapsulated pulse template whose parameters, measurement names and channels are mapped
         :param parameter_mapping: if not none, mappings for all parameters must be specified
         :param measurement_mapping: mappings for other measurement names are inserted
@@ -217,7 +217,7 @@ class MappingPulseTemplate(PulseTemplate, ParameterConstrainer):
                         channel_mapping=self.__channel_mapping)
 
         else:
-            data['template'] = self.template
+            data['template'] = self.template.get_serialization_data(serializer)
             if self.__parameter_mapping:
                 data['parameter_mapping'] = self.__parameter_mapping
             if self.__measurement_mapping:

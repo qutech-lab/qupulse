@@ -135,7 +135,7 @@ class RepetitionPulseTemplate(LoopPulseTemplate, ParameterConstrainer, Measureme
 
     def get_serialization_data(self, serializer: Optional[Serializer]=None) -> Dict[str, Any]:
         data = super().get_serialization_data(serializer)
-        data['body'] = self.body
+        data['body'] = self.body.get_serialization_data(serializer)
 
         if serializer: # compatibility to old serialization routines, deprecated
             data = dict()
