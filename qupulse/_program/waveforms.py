@@ -11,7 +11,7 @@ from abc import ABCMeta, abstractmethod
 from numbers import Real
 from typing import (
     AbstractSet, Any, FrozenSet, Iterable, Mapping, NamedTuple, Sequence, Set,
-    Tuple, Union, cast, Optional, List, Hashable)
+    Tuple, Union, cast, Optional, List, Hashable, Callable)
 from weakref import WeakValueDictionary, ref
 
 import numpy as np
@@ -50,10 +50,11 @@ class Waveform(Comparable, metaclass=ABCMeta):
 
     __sampled_cache = WeakValueDictionary()
 
-    __slots__ = ('_duration',)
+    __slots__ = ('_duration', '_volatile')
 
     def __init__(self, duration: TimeType):
         self._duration = duration
+        self._volatile: Optional[Callable[[Mapping], 'Waveform']] = None
 
     @property
     def duration(self) -> TimeType:
@@ -206,6 +207,12 @@ class Waveform(Comparable, metaclass=ABCMeta):
     def reversed(self) -> 'Waveform':
         """Returns a reversed version of this waveform."""
         return ReversedWaveform(self)
+
+    def __eq__(self, other):
+        return super(self).__eq__(other) and self._volatile == getattr(other, '_volatile', None)
+
+    def __hash__(self):
+        return hash((self._volatile, self.compare_key))
 
 
 class TableWaveformEntry(NamedTuple('TableWaveformEntry', [('t', Real),

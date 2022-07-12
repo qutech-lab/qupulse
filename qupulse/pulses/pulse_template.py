@@ -324,11 +324,18 @@ class AtomicPulseTemplate(PulseTemplate, MeasurementDefiner):
         during sequencing"""
         ### current behavior (same as previously): only adds EXEC Loop and measurements if a waveform exists.
         ### measurements are directly added to parent_loop (to reflect behavior of Sequencer + MultiChannelProgram)
-        assert not scope.get_volatile_parameters().keys() & self.parameter_names, "AtomicPT cannot be volatile"
-
         waveform = self.build_waveform(parameters=scope,
                                        channel_mapping=channel_mapping)
         if waveform:
+            if scope.get_volatile_parameters().keys() & self.parameter_names:
+                def make_new_waveform(new_volatile_parameters):
+                    new_parameters = scope.overwrite(new_volatile_parameters)
+                    new_waveform = self.build_waveform(new_parameters, channel_mapping)
+                    assert new_waveform.duration == waveform.duration, "Waveform duration changed (not handled yet)"
+                    new_waveform._volatile = make_new_waveform
+                    return new_waveform
+                waveform._volatile = make_new_waveform
+
             measurements = self.get_measurement_windows(parameters=scope,
                                                         measurement_mapping=measurement_mapping)
 

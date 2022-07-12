@@ -198,6 +198,8 @@ class ProgramEntry:
 
         self._loop = loop
 
+        self._volatile = OrderedDict()
+
         if waveforms is None:
             waveforms = OrderedDict((node.waveform, None)
                                     for node in loop.get_depth_first_iterator() if node.is_leaf()).keys()
@@ -214,6 +216,29 @@ class ProgramEntry:
         """Override this in derived class to change how empty channels are handled"""
         return None
 
+    def _sample_waveform(self, waveform: Waveform, wf_time) -> Tuple[Tuple[numpy.ndarray, ...],
+                                                                     Tuple[numpy.ndarray, ...]]:
+        sampled_channels = []
+        for channel, trafo, amplitude, offset in zip(self._channels, self._voltage_transformations,
+                                                     self._amplitudes, self._offsets):
+            if channel is None:
+                sampled_channels.append(self._sample_empty_channel(wf_time))
+            else:
+                sampled = waveform.get_sampled(channel, wf_time)
+                if trafo is not None:
+                    sampled = trafo(sampled)
+                sampled = sampled - offset
+                sampled /= amplitude
+                sampled_channels.append(sampled)
+
+        sampled_markers = []
+        for marker in self._markers:
+            if marker is None:
+                sampled_markers.append(self._sample_empty_marker(wf_time))
+            else:
+                sampled_markers.append(waveform.get_sampled(marker, wf_time) != 0)
+        return tuple(sampled_channels), tuple(sampled_markers)
+
     def _sample_waveforms(self, waveforms: Sequence[Waveform]) -> List[Tuple[Tuple[numpy.ndarray, ...],
                                                                              Tuple[numpy.ndarray, ...]]]:
         sampled_waveforms = []
@@ -221,28 +246,9 @@ class ProgramEntry:
         time_array, segment_lengths = get_sample_times(waveforms, self._sample_rate)
         for waveform, segment_length in zip(waveforms, segment_lengths):
             wf_time = time_array[:segment_length]
-
-            sampled_channels = []
-            for channel, trafo, amplitude, offset in zip(self._channels, self._voltage_transformations,
-                                                         self._amplitudes, self._offsets):
-                if channel is None:
-                    sampled_channels.append(self._sample_empty_channel(wf_time))
-                else:
-                    sampled = waveform.get_sampled(channel, wf_time)
-                    if trafo is not None:
-                        sampled = trafo(sampled)
-                    sampled = sampled - offset
-                    sampled /= amplitude
-                    sampled_channels.append(sampled)
-
-            sampled_markers = []
-            for marker in self._markers:
-                if marker is None:
-                    sampled_markers.append(self._sample_empty_marker(wf_time))
-                else:
-                    sampled_markers.append(waveform.get_sampled(marker, wf_time) != 0)
-
-            sampled_waveforms.append((tuple(sampled_channels), tuple(sampled_markers)))
+            sampled_waveforms.append(self._sample_waveform(waveform, wf_time))
+            if waveform._volatile:
+                self._volatile[waveform] = wf_time
         return sampled_waveforms
 
 

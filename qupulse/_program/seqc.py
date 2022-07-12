@@ -62,12 +62,12 @@ class BinaryWaveform:
 
     `to_csv_compatible_table` can be used to create a compatible compact csv file (with marker data included)
     """
-    __slots__ = ('data',)
+    __slots__ = ('data', 'volatile')
 
     PLAYBACK_QUANTUM = 16
     PLAYBACK_MIN_QUANTA = 2
 
-    def __init__(self, data: np.ndarray):
+    def __init__(self, data: np.ndarray, volatile: Callable):
         """ TODO: always use both channels?
 
         Args:
@@ -80,6 +80,7 @@ class BinaryWaveform:
         assert np.all(data[2::3] < 16), "invalid marker data"
         assert data.ndim == 1, "Data not one dimensional"
 
+        self.volatile = volatile
         self.data = data
         self.data.flags.writeable = False
 
@@ -102,6 +103,9 @@ class BinaryWaveform:
     @property
     def markers_ch2(self):
         return np.right_shift(np.bitwise_and(self.marker_data, 0b1100), 2)
+
+    def changed_volatile_parameters(self, new_parameters: Mapping[str, float]):
+        return self.from_sampled(*self.volatile(new_parameters))
 
     @classmethod
     def from_sampled(cls, ch1: Optional[np.ndarray], ch2: Optional[np.ndarray],
@@ -279,6 +283,7 @@ class WaveformMemory:
     def __init__(self):
         self.shared_waveforms = OrderedDict()  # type: MutableMapping[BinaryWaveform, set]
         self.concatenated_waveforms = OrderedDict()  # type: MutableMapping[str, ConcatenatedWaveform]
+        self.volatile_waveforms: MutableMapping = OrderedDict()
 
     def clear(self):
         self.shared_waveforms.clear()
@@ -528,7 +533,15 @@ class HDAWGProgramEntry(ProgramEntry):
                     # empty channel pairs
                     binary_waveforms.append(BinaryWaveform.zeroed(size))
                 else:
-                    binary_waveforms.append(BinaryWaveform.from_sampled(*sampled_channels, sampled_markers))
+                    if waveform._volatile:
+                        def resample(new_parameters):
+                            # does not change the original waveform in the program!
+                            new_waveform = waveform._volatile(new_parameters)
+                            return self._sample_waveform(new_waveform, self._volatile[waveform])
+                        volatile = resample
+                    else:
+                        volatile = None
+                    binary_waveforms.append(BinaryWaveform.from_sampled(*sampled_channels, sampled_markers), )
             self._waveforms[waveform] = tuple(binary_waveforms)
 
         self._waveform_manager = ProgramWaveformManager(program_name, waveform_memory)
