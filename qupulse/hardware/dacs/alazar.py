@@ -391,7 +391,7 @@ class AlazarCard(DAC):
             raise NotImplementedError('Currently only can do cross buffer mask')
         self._mask_prototypes[mask_id] = (hw_channel, mask_type)
 
-    def measure_program(self, channels: Iterable[str]) -> Dict[str, np.ndarray]:
+    def measure_program(self, channels: Iterable[str] = None) -> Dict[str, np.ndarray]:
         """
         Get all measurements at once and write them in a dictionary.
         """
@@ -413,7 +413,8 @@ class AlazarCard(DAC):
             # This fails if new changes have been applied to the card in the meantime
             # It is better than self.config.inputConfiguration but still
             return self.__card.scanConfiguration.inputConfiguration[hw_channel].inputRange
-
+        if channels is None:
+            channels=operation_definitions.keys()
         data = {}
         for op_name in channels:
             input_range = get_input_range(op_name)
