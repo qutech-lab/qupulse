@@ -168,8 +168,8 @@ class HDAWGRepresentation:
         return self._dev_ser
 
     def _initialize(self) -> None:
-        settings = [(f'/{self.serial}/awgs/*/userregs/*', 0),  # Reset all user registers to 0.
-                    (f'/{self.serial}/*/single', 1)]  # Single execution mode of sequence.
+        settings = [(f'/{self.serial}/awgs/*/userregs/*', 0),]  # Reset all user registers to 0.
+                    #(f'/{self.serial}/*/single', 1)]  # Single execution mode of sequence.
         for ch in range(0, 8):  # Route marker 1 signal for each channel to marker output.
             if ch % 2 == 0:
                 output = HDAWGTriggerOutSource.OUT_1_MARK_1.value
@@ -491,7 +491,7 @@ class HDAWGChannelGroup(AWG):
         self._start_compile_and_upload()
 
     def _start_compile_and_upload(self):
-        self._uploaded_seqc_source = None
+        #self._uploaded_seqc_source = None
         self._upload_generator = self._elf_manager.compile_and_upload(self._required_seqc_source)
 
     def _wait_for_compile_and_upload(self):
@@ -548,7 +548,8 @@ class HDAWGChannelGroup(AWG):
                 self._required_seqc_source = ""
             else:
                 self._required_seqc_source = self._program_manager.to_seqc_program(name)
-            self._start_compile_and_upload()
+            if self._required_seqc_source != self._uploaded_seqc_source:
+                self._start_compile_and_upload()
 
         if self._required_seqc_source != self._uploaded_seqc_source:
             self._wait_for_compile_and_upload()
@@ -693,9 +694,9 @@ class MDSChannelGroup(HDAWGChannelGroup):
         if status is not None:
             self.awg_module.set('awg/enable', int(status))
         else:
-            status = self.awg_module.get('awg/module')
+            status = self.awg_module.get('awg/enable')
 
-        #return bool(status)
+        return bool(status)
         """
         if status is not None:
             self.master_device.api_session.setInt(node_path, int(status))
@@ -957,11 +958,11 @@ class ELFManager:
 
     def _start_elf_upload(self, elf_file):
         logger.debug("Uploading %r", elf_file)
-        current_elf = self.awg_module.elf_file
-        if current_elf != elf_file:
-            logger.info("AWG %d: Overwriting elf file", self.awg_module.index)
-            self.awg_module.elf_file = elf_file
-            self.awg_module.elf_upload = True
+        #current_elf = self.awg_module.elf_file
+        #if current_elf != elf_file:
+        #logger.info("AWG %d: Overwriting elf file", self.awg_module.index)
+        #self.awg_module.elf_file = elf_file
+        #self.awg_module.elf_upload = True
         self._upload_job = (elf_file, None)
         time.sleep(.001)
 
@@ -972,7 +973,7 @@ class ELFManager:
             return
 
         elf_file, old_status = self._upload_job
-        assert self.awg_module.elf_file == elf_file
+        #assert self.awg_module.elf_file == elf_file
 
         if isinstance(old_status, float) or old_status is None:
             status_int, progress = self.awg_module.elf_status
@@ -990,7 +991,7 @@ class ELFManager:
 
     def _upload(self, elf_file) -> Generator[str, str, None]:
         if self.awg_module.compiler_upload:
-            pass
+            self._upload_job = (elf_file, None)
         else:
             self._start_elf_upload(elf_file)
 
