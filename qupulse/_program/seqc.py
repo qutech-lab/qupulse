@@ -27,6 +27,8 @@ import collections
 import numbers
 import string
 import functools
+import time
+import datetime
 
 import numpy as np
 from pathlib import Path
@@ -267,6 +269,7 @@ class WaveformFileSystem:
                     self.logger.exception("Error deleting: %r", existing_file.name)
 
         for file_name, binary_waveform in to_save.items():
+
             table = binary_waveform.to_csv_compatible_table()
             np.savetxt(file_name, table, '%u')
             self.logger.debug('Wrote %r', file_name)
@@ -681,7 +684,7 @@ class HDAWGProgramManager:
             return '\n'.join(lines)
 
     _PROGRAM_FUNCTION_NAME_TEMPLATE = '{program_name}_function'
-    WAIT_FOR_SOFTWARE_TRIGGER = "waitForSoftwareTrigger();"
+    WAIT_FOR_SOFTWARE_TRIGGER = "waitForSoftwareTrigger(); sync();"
     SOFTWARE_WAIT_FOR_TRIGGER_FUNCTION_DEFINITION = (
         'void waitForSoftwareTrigger() {\n'
         '  while (true) {\n'
@@ -886,6 +889,7 @@ class HDAWGProgramManager:
             lines.append('  }')
             lines.append('}')
         
+        #lines.append(f"// generated at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         return '\n'.join(lines)
 
 
@@ -1038,6 +1042,8 @@ def to_node_clusters(loop: Union[Sequence[Loop], Loop], loop_to_seqc_kwargs: dic
                 last_nodes.extend(current_period)
                 last_hashes.extend(current_template_hashes[:len(current_period)])
 
+                current_period.clear()
+
                 last_nodes.append(current_node)
                 last_hashes.append(current_hash)
 
@@ -1046,6 +1052,9 @@ def to_node_clusters(loop: Union[Sequence[Loop], Loop], loop_to_seqc_kwargs: dic
                  current_cluster) = _find_repetition(last_nodes, last_hashes,
                                                      node_clusters)
         else:
+            
+            assert not current_period
+            
             if len(last_nodes) == last_nodes.maxlen:
                 # lookup deque is full
                 node_clusters.append([last_nodes.popleft()])
