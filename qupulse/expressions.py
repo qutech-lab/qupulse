@@ -91,14 +91,24 @@ class Expression(AnonymousSerializable, metaclass=_ExpressionMeta):
         Returns:
 
         """
+
+        if isinstance(self._original_expression,(int,float)):
+
+            return self._original_expression
+
         parsed_kwargs = self._parse_evaluate_numeric_arguments(scope)
 
         result, self._expression_lambda = evaluate_lambdified(self.underlying_expression, self.variables,
-                                                              parsed_kwargs, lambdified=self._expression_lambda)
+                                                            parsed_kwargs, lambdified=self._expression_lambda)
 
         return self._parse_evaluate_numeric_result(result, scope)
 
     def evaluate_numeric(self, **kwargs) -> Union[Number, numpy.ndarray]:
+
+        if isinstance(self._original_expression,(int,float)):
+
+            return self._original_expression
+
         parsed_kwargs = self._parse_evaluate_numeric_arguments(kwargs)
 
         result, self._expression_lambda = evaluate_lambdified(self.underlying_expression, self.variables,
@@ -186,13 +196,18 @@ class ExpressionVector(Expression):
         return self._variables
 
     def evaluate_numeric(self, **kwargs) -> Union[numpy.ndarray, Number]:
+
+        
         parsed_kwargs = self._parse_evaluate_numeric_arguments(kwargs)
 
         flat_result = []
         for idx, expr in enumerate(self._expression_items):
-            result, self._lambdified_items[idx] = evaluate_lambdified(expr, self.variables, parsed_kwargs,
-                                                                      lambdified=self._lambdified_items[idx])
-            flat_result.append(result)
+            try:
+                flat_result.append(float(expr))
+            except:
+                result, self._lambdified_items[idx] = evaluate_lambdified(expr, self.variables, parsed_kwargs,
+                                                                        lambdified=self._lambdified_items[idx])
+                flat_result.append(result)
         return self._parse_evaluate_numeric_result(numpy.array(flat_result).reshape(self._expression_shape), kwargs)
 
     def get_serialization_data(self) -> Sequence[str]:
