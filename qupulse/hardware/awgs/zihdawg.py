@@ -26,6 +26,7 @@ from qupulse._program.seqc import HDAWGProgramManager, UserRegister, WaveformFil
 from qupulse.hardware.awgs.base import AWG, ChannelNotFoundException, AWGAmplitudeOffsetHandling
 from qupulse.pulses.parameters import ConstantParameter
 from qupulse.hardware.util import traced
+from qupulse._program._loop import roll_constant_waveforms
 
 
 logger = logging.getLogger('qupulse.hdawg')
@@ -444,6 +445,9 @@ class HDAWGChannelGroup(AWG):
         Returning from setting user register in seqc can take from 50ms to 60 ms. Fluctuates heavily. Not a good way to
         have deterministic behaviour "setUserReg(PROG_SEL, PROG_IDLE);".
         """
+
+        roll_constant_waveforms(program,2,32,1)
+
         if len(channels) != self.num_channels:
             raise HDAWGValueError('Channel ID not specified')
         if len(markers) != self.num_markers:
