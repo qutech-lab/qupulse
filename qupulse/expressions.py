@@ -427,6 +427,10 @@ class ExpressionScalar(Expression):
             raise NonNumericEvaluation(self, result, scope) from err
 
     def evaluate_in_scope(self, scope: Mapping) -> Union[Number, numpy.ndarray]:
+
+        
+
+
         parsed_kwargs = self._parse_evaluate_numeric_arguments(scope)
         result, self._expression_lambda = evaluate_lambdified(self.underlying_expression, self.variables,
                                                               parsed_kwargs, lambdified=self._expression_lambda)

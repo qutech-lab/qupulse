@@ -25,12 +25,6 @@ def _is_monotonic_numpy(arr: np.ndarray) -> bool:
     return np.all(arr[1:] >= arr[:-1])
 
 
-if numba is None:
-    is_monotonic = _is_monotonic_numpy
-else:
-    is_monotonic = _is_monotonic_numba
-
-
 @njit
 def _time_windows_to_samples_sorted_numba(begins, lengths,
                                           sample_rate: float) -> Tuple[np.ndarray, np.ndarray]:
