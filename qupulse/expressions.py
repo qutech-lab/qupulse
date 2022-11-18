@@ -109,30 +109,10 @@ class Expression(AnonymousSerializable, metaclass=_ExpressionMeta):
         Returns:
 
         """
-
-        if isinstance(self._original_expression,(int,float)):
-
-            return self._original_expression
-
-        parsed_kwargs = self._parse_evaluate_numeric_arguments(scope)
-
-        result, self._expression_lambda = evaluate_lambdified(self.underlying_expression, self.variables,
-                                                            parsed_kwargs, lambdified=self._expression_lambda)
-
-        return self._parse_evaluate_numeric_result(result, scope)
+        raise NotImplementedError("")
 
     def evaluate_numeric(self, **kwargs) -> Union[Number, numpy.ndarray]:
-
-        if isinstance(self._original_expression,(int,float)):
-
-            return self._original_expression
-
-        parsed_kwargs = self._parse_evaluate_numeric_arguments(kwargs)
-
-        result, self._expression_lambda = evaluate_lambdified(self.underlying_expression, self.variables,
-                                                              parsed_kwargs, lambdified=self._expression_lambda)
-
-        return self._parse_evaluate_numeric_result(result, kwargs)
+        return self.evaluate_in_scope(kwargs)
 
     def __float__(self):
         if self.variables:
@@ -212,22 +192,6 @@ class ExpressionVector(Expression):
     @property
     def variables(self) -> Sequence[str]:
         return self._variables
-
-
-    def evaluate_numeric(self, **kwargs) -> Union[numpy.ndarray, Number]:
-
-        
-        parsed_kwargs = self._parse_evaluate_numeric_arguments(kwargs)
-
-        flat_result = []
-        for idx, expr in enumerate(self._expression_items):
-            try:
-                flat_result.append(float(expr))
-            except:
-                result, self._lambdified_items[idx] = evaluate_lambdified(expr, self.variables, parsed_kwargs,
-                                                                        lambdified=self._lambdified_items[idx])
-                flat_result.append(result)
-        return self._parse_evaluate_numeric(numpy.array(flat_result).reshape(self._expression_shape), kwargs)
 
     def evaluate_in_scope(self, scope: Mapping) -> numpy.ndarray:
         parsed_kwargs = self._parse_evaluate_numeric_arguments(scope)
