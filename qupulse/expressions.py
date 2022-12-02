@@ -197,9 +197,15 @@ class ExpressionVector(Expression):
         parsed_kwargs = self._parse_evaluate_numeric_arguments(scope)
         flat_result = []
         for idx, expr in enumerate(self._expression_items):
-            result, self._lambdified_items[idx] = evaluate_lambdified(expr, self.variables, parsed_kwargs,
-                                                                      lambdified=self._lambdified_items[idx])
-            flat_result.append(result)
+
+            try:
+                result=float(expr)
+                flat_result.append(result)
+            except:
+
+                result, self._lambdified_items[idx] = evaluate_lambdified(expr, self.variables, parsed_kwargs,
+                                                                        lambdified=self._lambdified_items[idx])
+                flat_result.append(result)
         result = numpy.array(flat_result).reshape(self._expression_shape)
         try:
             return _parse_evaluate_numeric_vector(result)
@@ -416,28 +422,37 @@ class ExpressionScalar(Expression):
         return sympy.sympify('nan') == self._sympified_expression
 
     def evaluate_with_exact_rationals(self, scope: Mapping) -> Union[Number, numpy.ndarray]:
-        parsed_kwargs = self._parse_evaluate_numeric_arguments(scope)
-        result, self._exact_rational_lambdified = evaluate_lamdified_exact_rational(self.sympified_expression,
-                                                                                    self.variables,
-                                                                                    parsed_kwargs,
-                                                                                    self._exact_rational_lambdified)
+
         try:
-            return _parse_evaluate_numeric(result)
-        except ValueError as err:
-            raise NonNumericEvaluation(self, result, scope) from err
+            result=float(self._original_expression)
+            return result
+        except:
+
+            parsed_kwargs = self._parse_evaluate_numeric_arguments(scope)
+            result, self._exact_rational_lambdified = evaluate_lamdified_exact_rational(self.sympified_expression,
+                                                                                        self.variables,
+                                                                                        parsed_kwargs,
+                                                                                        self._exact_rational_lambdified)
+            try:
+                return _parse_evaluate_numeric(result)
+            except ValueError as err:
+                raise NonNumericEvaluation(self, result, scope) from err
 
     def evaluate_in_scope(self, scope: Mapping) -> Union[Number, numpy.ndarray]:
 
-        
-
-
-        parsed_kwargs = self._parse_evaluate_numeric_arguments(scope)
-        result, self._expression_lambda = evaluate_lambdified(self.underlying_expression, self.variables,
-                                                              parsed_kwargs, lambdified=self._expression_lambda)
         try:
-            return _parse_evaluate_numeric(result)
-        except ValueError as err:
-            raise NonNumericEvaluation(self, result, scope) from err
+            result=float(self._original_expression)
+            return result
+        except:
+
+
+            parsed_kwargs = self._parse_evaluate_numeric_arguments(scope)
+            result, self._expression_lambda = evaluate_lambdified(self.underlying_expression, self.variables,
+                                                                parsed_kwargs, lambdified=self._expression_lambda)
+            try:
+                return _parse_evaluate_numeric(result)
+            except ValueError as err:
+                raise NonNumericEvaluation(self, result, scope) from err
 
 
 class ExpressionVariableMissingException(Exception):

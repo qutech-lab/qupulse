@@ -41,6 +41,7 @@ from qupulse._program.volatile import VolatileRepetitionCount, VolatileProperty
 from qupulse.hardware.awgs.base import ProgramEntry
 from qupulse.hardware.util import zhinst_voltage_to_uint16
 from qupulse.pulses.parameters import MappedParameter, ConstantParameter
+from qupulse.utils.performance import write_int_table
 
 try:
     # zhinst fires a DeprecationWarning from its own code in some versions...
