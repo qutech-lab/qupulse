@@ -30,7 +30,7 @@ except ImportError:
 import time
 
 from qupulse.utils.types import ChannelID, TimeType, time_from_float
-from qupulse._program._loop import Loop, make_compatible
+from qupulse._program._loop import Loop, make_compatible, roll_constant_waveforms
 from qupulse._program.seqc import HDAWGProgramManager, UserRegister, WaveformFileSystem
 from qupulse.hardware.awgs.base import AWG, ChannelNotFoundException, AWGAmplitudeOffsetHandling
 from qupulse.hardware.util import traced
@@ -367,6 +367,7 @@ class HDAWGModulationMode(Enum):
 
 @traced
 class HDAWGChannelGroup(AWG):
+    ROLL_CONSTANT_WAVEFORM_ENABLE = False
     MIN_WAVEFORM_LEN = 192
     WAVEFORM_LEN_QUANTUM = 16
 
@@ -466,6 +467,14 @@ class HDAWGChannelGroup(AWG):
         q_sample_rate = self.sample_rate / 10**9
 
         # Adjust program to fit criteria.
+        if self.ROLL_CONSTANT_WAVEFORM_ENABLE:
+            roll_constant_waveforms(
+                program,
+                self.MIN_WAVEFORM_LEN,
+                self.WAVEFORM_LEN_QUANTUM,
+                q_sample_rate
+            )
+        
         make_compatible(program,
                         minimal_waveform_length=self.MIN_WAVEFORM_LEN,
                         waveform_quantum=self.WAVEFORM_LEN_QUANTUM,
